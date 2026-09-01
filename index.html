@@ -280,7 +280,10 @@
         <select id="teamSelect"></select>
         <button class="btn primary" id="logPickBtn">Log pick</button>
       </div>
-      <div class="section-title">Pick log</div>
+      <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
+        <span>Pick log</span>
+        <button class="btn danger" id="resetDraftBtn" style="padding:5px 11px; font-size:12px;">Reset draft</button>
+      </div>
       <div class="pick-log" id="pickLog"></div>
     </div>
     <div class="draft-side">
@@ -879,6 +882,15 @@ async function init(){
   pInput.addEventListener('blur', ()=> setTimeout(()=>{document.getElementById('autocompleteList').style.display='none';},150));
   document.getElementById('logPickBtn').addEventListener('click', logPick);
   pInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); logPick(); } });
+
+  document.getElementById('resetDraftBtn').addEventListener('click', ()=>{
+    if(draftPicks.length===0) return;
+    if(confirm(`Clear all ${draftPicks.length} logged picks? Your player values and edits won't be affected.`)){
+      draftPicks = [];
+      persist();
+      refreshAll();
+    }
+  });
 
   markSaved();
 }
