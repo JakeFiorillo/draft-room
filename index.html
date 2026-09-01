@@ -148,6 +148,10 @@
   .weight-note{ font-size:11px; color:var(--text-mute); margin-top:6px; line-height:1.5; }
   .team-list{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; }
   .team-list .field-row{ margin-bottom:4px; }
+  .settings-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .settings-stats .sstat{ background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:11px 13px; }
+  .settings-stats .sstat .v{ font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:700; color:var(--gold); }
+  .settings-stats .sstat .l{ font-size:11px; color:var(--text-mute); margin-top:3px; line-height:1.4; }
 
   /* ---------- Draft board ---------- */
   .draft-layout{ display:grid; grid-template-columns:1.5fr 1fr; gap:16px; align-items:start; }
@@ -314,6 +318,10 @@
       <div class="field-group" style="grid-column:1/-1;">
         <h3>Team names</h3>
         <div class="team-list" id="teamNameList"></div>
+      </div>
+      <div class="field-group" style="grid-column:1/-1;">
+        <h3>Value pool check</h3>
+        <div class="settings-stats" id="valuePoolStats"></div>
       </div>
     </div>
   </div>
@@ -808,6 +816,24 @@ function setupTabs(){
   });
 }
 
+function renderValuePoolStats(){
+  const wrap = document.getElementById('valuePoolStats');
+  if(!wrap) return;
+  const ranked = CURRENT.filter(r=> r.espn!=null || r.fp!=null || r.ds!=null);
+  const totalSpots = settings.teams * (settings.starters + settings.bench);
+  const draftablePool = [...CURRENT].sort((a,b)=>b.myValue-a.myValue).slice(0, totalSpots);
+
+  const sumRanked = ranked.reduce((s,r)=>s+r.myValue, 0);
+  const sumDraftable = draftablePool.reduce((s,r)=>s+r.myValue, 0);
+  const budgetPool = settings.teams * settings.budget;
+
+  wrap.innerHTML = `
+    <div class="sstat"><div class="v num">$${sumRanked.toLocaleString()}</div><div class="l">Sum of My Value — all ${ranked.length} players with a source value</div></div>
+    <div class="sstat"><div class="v num">$${sumDraftable.toLocaleString()}</div><div class="l">Sum of My Value — top ${totalSpots} draftable spots</div></div>
+    <div class="sstat"><div class="v num">$${budgetPool.toLocaleString()}</div><div class="l">Your league's total budget pool (target)</div></div>
+  `;
+}
+
 function renderTopStats(){
   document.getElementById('leagueSub').textContent = `${settings.teams} teams · $${settings.budget} budget`;
   document.getElementById('statPool').textContent = '$' + (settings.teams*settings.budget).toLocaleString();
@@ -825,6 +851,7 @@ function refreshAll(){
   renderTeamCards();
   renderTopAvailable();
   renderDraftStats();
+  renderValuePoolStats();
   renderTopStats();
 }
 
