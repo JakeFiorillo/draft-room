@@ -296,7 +296,6 @@
     <button class="tab-btn active" data-view="values">Player Values</button>
     <button class="tab-btn" data-view="draft">Draft Board</button>
     <button class="tab-btn" data-view="rosters">Rosters</button>
-    <button class="tab-btn" data-view="builder">Roster Builder</button>
     <button class="tab-btn" data-view="settings">Settings</button>
   </div>
   <div class="topstats">
@@ -312,7 +311,7 @@
     <div class="toolbar">
       <input class="search" id="searchInput" placeholder="Search players or teams…">
       <div id="posChips" style="display:flex;gap:6px;"></div>
-      <div class="chip active" id="unrankedToggle">Hiding unranked</div>
+      <div class="chip active" id="unrankedToggle">Hiding $0 players</div>
     </div>
     <div class="tablewrap">
       <table>
@@ -348,10 +347,6 @@
     </div>
     <div class="draft-side">
       <div class="panel" style="padding:14px 16px;">
-        <div class="section-title" style="padding:0 0 12px;">Your targets</div>
-        <div id="draftTargets"></div>
-      </div>
-      <div class="panel" style="padding:14px 16px;">
         <div class="section-title" style="padding:0 0 12px;">Top available</div>
         <div id="topAvailable"></div>
       </div>
@@ -367,20 +362,6 @@
 <div class="view" id="view-rosters">
   <div class="roster-note">Slots follow your league's starting lineup (QB, 2 RB, 2 WR, TE, FLEX, DST, K) — set bench size in Settings.</div>
   <div class="roster-grid" id="rosterGrid"></div>
-</div>
-
-<!-- ===================== ROSTER BUILDER ===================== -->
-<div class="view" id="view-builder">
-  <div class="builder-layout">
-    <div class="panel" style="padding:14px 16px;">
-      <div class="section-title" style="padding:0 0 10px;">Saved rosters</div>
-      <div class="roster-chip-list" id="rosterChipList"></div>
-      <button class="btn primary" id="newRosterBtn" style="margin-top:10px; width:100%;">+ New roster</button>
-    </div>
-    <div class="panel" id="builderMain">
-      <div class="empty-state">Create a roster to start experimenting.</div>
-    </div>
-  </div>
 </div>
 
 <!-- ===================== SETTINGS ===================== -->
@@ -434,7 +415,7 @@ let currentRosterId = null;
 let sortState = { col: 'myValue', dir: 'desc' };
 let posFilter = 'ALL';
 let searchQuery = '';
-let hideUnranked = true; // hide players with no value from any of the 3 sources
+let hideUnranked = true; // hide players whose Value AND Adjusted Value are both $0
 
 const POSES = ['ALL','QB','RB','WR','TE','DST','K'];
 
@@ -591,7 +572,7 @@ function tierColor(t){
 
 function renderValuesTable(){
   let rows = CURRENT;
-  if(hideUnranked) rows = rows.filter(r=> r.espn!=null || r.fp!=null || r.ds!=null);
+  if(hideUnranked) rows = rows.filter(r=> !(r.myValue===0 && r.adjValue===0));
   if(posFilter !== 'ALL') rows = rows.filter(r=>r.pos===posFilter);
   if(searchQuery){
     const q = searchQuery.toLowerCase();
@@ -665,7 +646,7 @@ function renderValuesTable(){
 function setupUnrankedToggle(){
   const btn = document.getElementById('unrankedToggle');
   const update = ()=>{
-    btn.textContent = hideUnranked ? 'Hiding unranked' : 'Showing unranked';
+    btn.textContent = hideUnranked ? 'Hiding $0 players' : 'Showing $0 players';
     btn.classList.toggle('active', hideUnranked);
   };
   btn.addEventListener('click', ()=>{
@@ -1156,7 +1137,7 @@ function renderPickLog(){
 function renderTopAvailable(){
   const wrap = document.getElementById('topAvailable');
   const drafted = new Set(draftPicks.map(p=>p.player));
-  const available = CURRENT.filter(r=> !drafted.has(r.name) && (r.espn!=null || r.fp!=null || r.ds!=null));
+  const available = CURRENT.filter(r=> !drafted.has(r.name) && !(r.myValue===0 && r.adjValue===0));
   const top = available.slice(0, 12); // CURRENT is already sorted by myValue desc
   if(top.length===0){
     wrap.innerHTML = `<div class="empty-state">No players left.</div>`;
@@ -1344,9 +1325,6 @@ function refreshAll(){
   renderPickLog();
   renderTeamCards();
   renderRosters();
-  renderRosterChipList();
-  renderBuilderMain();
-  renderDraftTargets();
   renderTopAvailable();
   renderDraftStats();
   renderValuePoolStats();
@@ -1365,7 +1343,6 @@ async function init(){
   renderSettings();
   bindSettingsInputs();
   setupTabs();
-  setupRosterBuilder();
   refreshAll();
 
   document.getElementById('searchInput').addEventListener('input', e=>{
