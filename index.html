@@ -123,15 +123,12 @@
   .pos-TE{ background:rgba(191,124,214,0.18); color:#d29ce0; }
   .pos-DST{ background:rgba(139,147,163,0.18); color:var(--text-dim); }
   .pos-K{ background:rgba(139,147,163,0.18); color:var(--text-dim); }
-  .myval-input{
-    width:64px; background:var(--bg); border:1px solid var(--border); border-radius:5px;
-    color:var(--gold); font-weight:700; padding:4px 6px; text-align:right;
-    font-family:'JetBrains Mono',monospace;
-  }
-  .myval-input.overridden{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold-dim) inset; }
-  .myval-input:focus{ outline:none; border-color:var(--gold); }
-  .reset-x{ color:var(--text-mute); cursor:pointer; margin-left:5px; font-size:12px; }
-  .reset-x:hover{ color:var(--red); }
+  .star-rating{ display:flex; gap:1px; }
+  .star-rating .star{ cursor:pointer; font-size:15px; color:var(--border); transition:color .1s, transform .1s; }
+  .star-rating .star.filled{ color:var(--gold); }
+  .star-rating .star:hover{ transform:scale(1.15); }
+  .star-rating:hover .star{ color:var(--gold-dim); }
+  .star-rating:hover .star.filled{ color:var(--gold); }
 
   /* ---------- Settings panel ---------- */
   .settings-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; padding:18px; }
@@ -413,8 +410,8 @@ const RAW_PLAYERS = [["Jahmyr Gibbs","DET","RB",1,1,6,57,64.0,61.0,"5 out of 5",
 /* ============================================================
    STATE
    ============================================================ */
-let overrides = {};       // { playerName: number }
-let weights = { fp: 0.6, espn: 0.2, ds: 0.2 };
+let ratings = {};          // { playerName: 1-5 }
+let weights = { fp: 0.65, espn: 0.15, ds: 0.20 };
 let settings = { teams: 12, budget: 200, starters: 9, bench: 7, myTeamIndex: 0 };
 let teamNames = Array.from({length:12}, (_,i)=>`Team ${i+1}`);
 let draftPicks = [];       // { player, price, team, pickNum }
@@ -467,7 +464,7 @@ async function persist(){
   saveTimer = setTimeout(async ()=>{
     try{
       await storage.set('draftroom-state', JSON.stringify({
-        overrides, weights, settings, teamNames, draftPicks, savedRosters
+        ratings, weights, settings, teamNames, draftPicks, savedRosters
       }));
       markSaved();
     }catch(e){ console.error('save failed', e); }
@@ -478,7 +475,7 @@ async function loadState(){
     const res = await storage.get('draftroom-state');
     if(res && res.value){
       const s = JSON.parse(res.value);
-      overrides = s.overrides || {};
+      ratings = s.ratings || {};
       weights = s.weights || weights;
       settings = s.settings || settings;
       teamNames = s.teamNames || teamNames;
@@ -511,20 +508,25 @@ function computeAll(){
   const scale = sumTopN > 0 ? totalPool / sumTopN : 1;
 
   rows.forEach(r=>{
-    const computed = Math.max(0, Math.round(r.raw * scale));
-    if(Object.prototype.hasOwnProperty.call(overrides, r.name)){
-      r.myValue = overrides[r.name];
-      r.isOverride = true;
-    } else {
-      r.myValue = computed;
-      r.isOverride = false;
-    }
-    r.computedValue = computed;
+    r.myValue = Math.max(0, Math.round(r.raw * scale));
+    r.rating = ratings[r.name] || 0;
+    r.adjValue = computeAdjustedValue(r.myValue, r.rating);
   });
 
   rows.sort((a,b)=>b.myValue - a.myValue);
   rows.forEach((r,i)=> r.rank = i+1 );
   return rows;
+}
+
+function computeAdjustedValue(value, rating){
+  if(!rating || rating===3) return value; // unrated or neutral = no adjustment
+  let raw;
+  if(rating===5) raw = value*1.03 + 2;
+  else if(rating===4) raw = value*1.02 + 1;
+  else if(rating===2) raw = value*0.98 - 1;
+  else if(rating===1) raw = value*0.97 - 2;
+  raw = Math.max(0, raw);
+  return rating >= 4 ? Math.ceil(raw) : Math.floor(raw);
 }
 
 let CURRENT = [];
@@ -546,6 +548,8 @@ const COLS = [
   {key:'raw', label:'Raw Blend', num:true},
   {key:'projPts', label:'Proj Pts', num:true},
   {key:'myValue', label:'My Value', num:true},
+  {key:'rating', label:'Interest', num:true},
+  {key:'adjValue', label:'Adj. Value', num:true},
   {key:'upside', label:'Upside'},
   {key:'bust', label:'Bust Risk'},
 ];
@@ -613,10 +617,13 @@ function renderValuesTable(){
       <td class="dim num">${r.ds!=null ? '$'+r.ds : '—'}</td>
       <td class="dim num">${r.raw!=null ? '$'+r.raw.toFixed(1) : '—'}</td>
       <td class="dim num">${r.projPts!=null ? r.projPts.toFixed(1) : '—'}</td>
-      <td class="num">
-        <input class="myval-input ${r.isOverride?'overridden':''}" type="number" min="0" value="${r.myValue}" data-name="${encodeURIComponent(r.name)}">
-        ${r.isOverride ? `<span class="reset-x" data-reset="${encodeURIComponent(r.name)}" title="Reset to computed value">✕</span>` : ''}
+      <td class="num" style="font-weight:700; color:var(--text);">$${r.myValue}</td>
+      <td>
+        <div class="star-rating" data-name="${encodeURIComponent(r.name)}">
+          ${[1,2,3,4,5].map(v=>`<span class="star ${r.rating>=v?'filled':''}" data-val="${v}">★</span>`).join('')}
+        </div>
       </td>
+      <td class="num" style="font-weight:700; color:var(--gold);">$${r.adjValue}</td>
       <td class="dim">${r.upside && r.upside!=='-' ? r.upside : '—'}</td>
       <td class="dim">${r.bust && r.bust!=='-' ? r.bust : '—'}</td>
     `;
@@ -624,21 +631,19 @@ function renderValuesTable(){
   });
   tbody.appendChild(frag);
 
-  tbody.querySelectorAll('.myval-input').forEach(inp=>{
-    inp.addEventListener('change', e=>{
-      const name = decodeURIComponent(e.target.dataset.name);
-      const val = parseFloat(e.target.value);
-      if(isNaN(val)){ delete overrides[name]; } else { overrides[name] = val; }
-      persist();
-      refreshAll();
-    });
-  });
-  tbody.querySelectorAll('.reset-x').forEach(x=>{
-    x.addEventListener('click', e=>{
-      const name = decodeURIComponent(e.target.dataset.reset);
-      delete overrides[name];
-      persist();
-      refreshAll();
+  tbody.querySelectorAll('.star-rating').forEach(widget=>{
+    const name = decodeURIComponent(widget.dataset.name);
+    widget.querySelectorAll('.star').forEach(star=>{
+      star.addEventListener('click', ()=>{
+        const val = parseInt(star.dataset.val);
+        if(ratings[name] === val){
+          delete ratings[name]; // clicking the current rating clears it
+        } else {
+          ratings[name] = val;
+        }
+        persist();
+        refreshAll();
+      });
     });
   });
 }
