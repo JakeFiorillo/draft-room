@@ -222,6 +222,21 @@
   .section-title{ padding:14px 16px 0; font-size:13px; color:var(--text-dim); font-weight:600; }
   .empty-state{ padding:40px 20px; text-align:center; color:var(--text-mute); font-size:13px; }
 
+  .roster-note{ font-size:12px; color:var(--text-mute); margin-bottom:14px; }
+  .roster-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+  .roster-card{ background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .roster-card-head{ padding:12px 14px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; background:var(--panel-alt); }
+  .roster-card-head .rname{ font-weight:600; font-size:14px; }
+  .roster-card-head .rbudget{ font-size:11.5px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
+  .roster-section-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-mute); padding:9px 14px 4px; font-weight:600; }
+  .roster-slot{ display:flex; align-items:center; gap:8px; padding:6px 14px; font-size:12.5px; border-bottom:1px solid var(--border-soft); }
+  .roster-slot:last-child{ border-bottom:none; }
+  .roster-slot .slot-tag{ width:38px; flex-shrink:0; font-size:10.5px; font-weight:700; color:var(--text-mute); }
+  .roster-slot .slot-player{ flex:1; font-weight:600; }
+  .roster-slot .slot-player.empty{ color:var(--text-mute); font-weight:400; font-style:italic; }
+  .roster-slot .slot-meta{ color:var(--text-mute); font-size:11px; }
+  .roster-slot .slot-price{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); width:36px; text-align:right; flex-shrink:0; }
+
   ::-webkit-scrollbar{ width:9px; height:9px; }
   ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:5px; }
   ::-webkit-scrollbar-track{ background:transparent; }
@@ -238,6 +253,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-view="values">Player Values</button>
     <button class="tab-btn" data-view="draft">Draft Board</button>
+    <button class="tab-btn" data-view="rosters">Rosters</button>
     <button class="tab-btn" data-view="settings">Settings</button>
   </div>
   <div class="topstats">
@@ -297,6 +313,12 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- ===================== ROSTERS ===================== -->
+<div class="view" id="view-rosters">
+  <div class="roster-note">Slots follow your league's starting lineup (QB, 2 RB, 2 WR, TE, FLEX, DST, K) — set bench size in Settings.</div>
+  <div class="roster-grid" id="rosterGrid"></div>
 </div>
 
 <!-- ===================== SETTINGS ===================== -->
@@ -595,6 +617,89 @@ function renderPosChips(){
 /* ============================================================
    DRAFT BOARD
    ============================================================ */
+/* ============================================================
+   ROSTERS
+   ============================================================ */
+const STARTER_TEMPLATE = ['QB','RB','RB','WR','WR','TE','FLEX','DST','K'];
+
+function assignRosterSlots(teamPicks){
+  const slots = STARTER_TEMPLATE.map(tag=>({ tag, pick:null }));
+  const sorted = [...teamPicks].sort((a,b)=>a.pickNum-b.pickNum);
+  const bench = [];
+  sorted.forEach(pick=>{
+    const player = findPlayer(pick.player);
+    const pos = player ? player.pos : null;
+    let slot = slots.find(s=> s.tag===pos && !s.pick);
+    if(!slot && ['RB','WR','TE'].includes(pos)){
+      slot = slots.find(s=> s.tag==='FLEX' && !s.pick);
+    }
+    if(slot){
+      slot.pick = { pick, player };
+    } else {
+      bench.push({ pick, player });
+    }
+  });
+  return { slots, bench };
+}
+
+function renderRosters(){
+  const wrap = document.getElementById('rosterGrid');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  const totalSlots = settings.starters + settings.bench;
+  teamNames.forEach(t=>{
+    const picks = draftPicks.filter(p=>p.team===t);
+    const spent = picks.reduce((s,p)=>s+p.price,0);
+    const { slots, bench } = assignRosterSlots(picks);
+
+    const card = document.createElement('div');
+    card.className = 'roster-card';
+
+    let html = `
+      <div class="roster-card-head">
+        <span class="rname">${t}</span>
+        <span class="rbudget">$${spent} spent · $${settings.budget-spent} left · ${picks.length}/${totalSlots}</span>
+      </div>
+      <div class="roster-section-label">Starters</div>
+    `;
+    slots.forEach(s=>{
+      if(s.pick){
+        const { pick, player } = s.pick;
+        html += `
+          <div class="roster-slot">
+            <span class="slot-tag">${s.tag}</span>
+            <span class="slot-player">${pick.player}<span class="slot-meta"> ${player?player.team||'':''}</span></span>
+            <span class="slot-price">$${pick.price}</span>
+          </div>`;
+      } else {
+        html += `
+          <div class="roster-slot">
+            <span class="slot-tag">${s.tag}</span>
+            <span class="slot-player empty">empty</span>
+            <span class="slot-price"></span>
+          </div>`;
+      }
+    });
+
+    html += `<div class="roster-section-label">Bench (${bench.length}/${settings.bench})</div>`;
+    if(bench.length===0){
+      html += `<div class="roster-slot"><span class="slot-player empty">empty</span></div>`;
+    } else {
+      bench.forEach(({pick, player})=>{
+        html += `
+          <div class="roster-slot">
+            <span class="slot-tag">${player?player.pos:'—'}</span>
+            <span class="slot-player">${pick.player}<span class="slot-meta"> ${player?player.team||'':''}</span></span>
+            <span class="slot-price">$${pick.price}</span>
+          </div>`;
+      });
+    }
+
+    card.innerHTML = html;
+    wrap.appendChild(card);
+  });
+}
+
 function renderTeamSelect(){
   const sel = document.getElementById('teamSelect');
   sel.innerHTML = teamNames.map(t=>`<option value="${t}">${t}</option>`).join('');
@@ -854,6 +959,7 @@ function refreshAll(){
   renderValuesTable();
   renderPickLog();
   renderTeamCards();
+  renderRosters();
   renderTopAvailable();
   renderDraftStats();
   renderValuePoolStats();
