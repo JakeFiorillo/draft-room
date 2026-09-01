@@ -233,6 +233,7 @@
     <div class="toolbar">
       <input class="search" id="searchInput" placeholder="Search players or teams…">
       <div id="posChips" style="display:flex;gap:6px;"></div>
+      <div class="chip active" id="unrankedToggle">Hiding unranked</div>
       <button class="btn" id="importBtn">Import edited .xlsx</button>
       <input type="file" id="importFile" accept=".xlsx">
       <button class="btn" id="exportBtn">Export .xlsx</button>
@@ -316,6 +317,7 @@ let draftPicks = [];       // { player, price, team, pickNum }
 let sortState = { col: 'myValue', dir: 'desc' };
 let posFilter = 'ALL';
 let searchQuery = '';
+let hideUnranked = true; // hide players with no value from any of the 3 sources
 
 const POSES = ['ALL','QB','RB','WR','TE','DST','K'];
 
@@ -460,6 +462,7 @@ function tierColor(t){
 
 function renderValuesTable(){
   let rows = CURRENT;
+  if(hideUnranked) rows = rows.filter(r=> r.espn!=null || r.fp!=null || r.ds!=null);
   if(posFilter !== 'ALL') rows = rows.filter(r=>r.pos===posFilter);
   if(searchQuery){
     const q = searchQuery.toLowerCase();
@@ -523,6 +526,20 @@ function renderValuesTable(){
       refreshAll();
     });
   });
+}
+
+function setupUnrankedToggle(){
+  const btn = document.getElementById('unrankedToggle');
+  const update = ()=>{
+    btn.textContent = hideUnranked ? 'Hiding unranked' : 'Showing unranked';
+    btn.classList.toggle('active', hideUnranked);
+  };
+  btn.addEventListener('click', ()=>{
+    hideUnranked = !hideUnranked;
+    update();
+    renderValuesTable();
+  });
+  update();
 }
 
 function renderPosChips(){
@@ -818,6 +835,7 @@ async function init(){
   await loadState();
   renderHead();
   renderPosChips();
+  setupUnrankedToggle();
   renderTeamSelect();
   renderSettings();
   bindSettingsInputs();
