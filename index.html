@@ -279,6 +279,40 @@
   .target-pill.got{ background:var(--green-bg); color:var(--green); border-color:transparent; font-weight:600; }
   .target-pill.gone{ background:var(--red-bg); color:var(--red); border-color:transparent; text-decoration:line-through; opacity:0.7; }
 
+  .mode-toggle{ display:flex; gap:8px; margin-bottom:16px; }
+  .mode-btn{
+    background:var(--panel); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+    padding:9px 16px; border-radius:8px; font-size:13px; font-weight:600; transition:.15s;
+  }
+  .mode-btn:hover{ color:var(--text); }
+  .mode-btn.active{ background:var(--gold); color:#0F1115; border-color:var(--gold); }
+
+  .snake-status{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px;
+  }
+  .snake-status .sstat2{ background:var(--panel); border:1px solid var(--border); border-radius:9px; padding:12px 14px; }
+  .snake-status .sstat2 .v{ font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; }
+  .snake-status .sstat2 .l{ font-size:10.5px; color:var(--text-mute); margin-top:2px; }
+  .snake-status .sstat2.myturn{ background:var(--green-bg); border-color:var(--green); }
+  .snake-status .sstat2.myturn .v{ color:var(--green); }
+
+  .snake-pick-row{ display:grid; grid-template-columns:34px 1fr 60px 70px; gap:8px; align-items:center; padding:8px 16px; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
+  .snake-pick-row:nth-child(even){ background:var(--row-stripe); }
+  .snake-pick-row .sp-pick{ color:var(--text-mute); font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .snake-pick-row .sp-name{ font-weight:600; }
+  .snake-pick-row .sp-team{ color:var(--text-dim); font-size:11.5px; }
+  .snake-pick-row .sp-team.mine{ color:var(--green); font-weight:700; }
+
+  .best-avail-row{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
+  .best-avail-row:last-child{ border-bottom:none; }
+  .best-avail-row .ba-rank{ color:var(--text-mute); font-family:'JetBrains Mono',monospace; width:20px; flex-shrink:0; }
+  .best-avail-row .ba-name{ font-weight:600; flex:1; }
+  .best-avail-row .ba-meta{ color:var(--text-mute); font-size:11.5px; margin-left:4px; }
+  .best-avail-row .ba-val{ font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--gold); }
+
+  .next-pick-note{ font-size:12px; color:var(--text-dim); background:var(--bg); border:1px solid var(--border); border-radius:7px; padding:9px 11px; margin-bottom:10px; }
+  .next-pick-note b{ color:var(--gold); }
+
   ::-webkit-scrollbar{ width:9px; height:9px; }
   ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:5px; }
   ::-webkit-scrollbar-track{ background:transparent; }
@@ -326,33 +360,73 @@
 
 <!-- ===================== DRAFT BOARD ===================== -->
 <div class="view" id="view-draft">
-  <div class="draft-stats" id="draftStats"></div>
-  <div class="draft-layout">
-    <div class="panel">
-      <div class="pick-form">
-        <div class="autocomplete-wrap">
-          <input id="playerSearchInput" placeholder="Nominate a player…" autocomplete="off">
-          <div class="autocomplete-list" id="autocompleteList"></div>
+  <div class="mode-toggle" id="modeToggle">
+    <button class="mode-btn active" data-mode="auction">Auction Draft</button>
+    <button class="mode-btn" data-mode="snake">Snake Draft</button>
+  </div>
+
+  <!-- ===== AUCTION MODE ===== -->
+  <div id="auctionBoard">
+    <div class="draft-stats" id="draftStats"></div>
+    <div class="draft-layout">
+      <div class="panel">
+        <div class="pick-form">
+          <div class="autocomplete-wrap">
+            <input id="playerSearchInput" placeholder="Nominate a player…" autocomplete="off">
+            <div class="autocomplete-list" id="autocompleteList"></div>
+          </div>
+          <input id="priceInput" type="number" min="0" placeholder="Price $">
+          <select id="teamSelect"></select>
+          <button class="btn primary" id="logPickBtn">Log pick</button>
         </div>
-        <input id="priceInput" type="number" min="0" placeholder="Price $">
-        <select id="teamSelect"></select>
-        <button class="btn primary" id="logPickBtn">Log pick</button>
+        <div id="nominatedCard"></div>
+        <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
+          <span>Pick log</span>
+          <button class="btn danger" id="resetDraftBtn" style="padding:5px 11px; font-size:12px;">Reset draft</button>
+        </div>
+        <div class="pick-log" id="pickLog"></div>
       </div>
-      <div id="nominatedCard"></div>
-      <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
-        <span>Pick log</span>
-        <button class="btn danger" id="resetDraftBtn" style="padding:5px 11px; font-size:12px;">Reset draft</button>
+      <div class="draft-side">
+        <div class="panel" style="padding:14px 16px;">
+          <div class="section-title" style="padding:0 0 12px;">Top available</div>
+          <div id="topAvailable"></div>
+        </div>
+        <div class="panel" style="padding:14px 16px;">
+          <div class="section-title" style="padding:0 0 12px;">Team budgets</div>
+          <div class="team-cards" id="teamCards"></div>
+        </div>
       </div>
-      <div class="pick-log" id="pickLog"></div>
     </div>
-    <div class="draft-side">
-      <div class="panel" style="padding:14px 16px;">
-        <div class="section-title" style="padding:0 0 12px;">Top available</div>
-        <div id="topAvailable"></div>
+  </div>
+
+  <!-- ===== SNAKE MODE ===== -->
+  <div id="snakeBoard" style="display:none;">
+    <div class="snake-status" id="snakeStatus"></div>
+    <div class="draft-layout">
+      <div class="panel">
+        <div class="pick-form">
+          <div class="autocomplete-wrap" style="flex:3;">
+            <input id="snakePlayerInput" placeholder="Who got picked?" autocomplete="off">
+            <div class="autocomplete-list" id="snakeAutocompleteList"></div>
+          </div>
+          <button class="btn primary" id="snakeLogPickBtn">Log pick</button>
+        </div>
+        <div id="snakeNominatedCard"></div>
+        <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
+          <span>Pick log</span>
+          <button class="btn danger" id="snakeResetBtn" style="padding:5px 11px; font-size:12px;">Reset snake draft</button>
+        </div>
+        <div class="pick-log" id="snakePickLog"></div>
       </div>
-      <div class="panel" style="padding:14px 16px;">
-        <div class="section-title" style="padding:0 0 12px;">Team budgets</div>
-        <div class="team-cards" id="teamCards"></div>
+      <div class="draft-side">
+        <div class="panel" style="padding:14px 16px;">
+          <div class="section-title" style="padding:0 0 12px;">Best available (by Adjusted Value)</div>
+          <div id="snakeBestAvailable"></div>
+        </div>
+        <div class="panel" style="padding:14px 16px;">
+          <div class="section-title" style="padding:0 0 12px;">Your projected lineup</div>
+          <div id="snakeProjectedLineup"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -389,6 +463,14 @@
         <div class="team-list" id="teamNameList"></div>
       </div>
       <div class="field-group" style="grid-column:1/-1;">
+        <h3>Snake draft settings</h3>
+        <div class="field-row"><label>Number of teams</label><input type="number" id="cfgSnakeTeams" min="2" max="20"></div>
+        <div class="field-row"><label>Bench spots</label><input type="number" id="cfgSnakeBench" min="0"></div>
+        <div class="field-row" style="margin-bottom:10px;"><label>Your draft slot</label><select id="cfgSnakeSlot" style="width:90px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:6px 8px; font-size:13px;"></select></div>
+        <div class="team-list" id="snakeTeamNameList"></div>
+        <div class="weight-note">Snake draft uses the same starting lineup shape (QB, 2 RB, 2 WR, TE, FLEX, DST, K) but its own team count, bench size, and pick order — fully separate from your auction league.</div>
+      </div>
+      <div class="field-group" style="grid-column:1/-1;">
         <h3>Value pool check</h3>
         <div class="settings-stats" id="valuePoolStats"></div>
       </div>
@@ -412,6 +494,10 @@ let teamNames = Array.from({length:12}, (_,i)=>`Team ${i+1}`);
 let draftPicks = [];       // { player, price, team, pickNum }
 let savedRosters = [];     // { id, name, starters: [name|null x9], bench: [name,...] }
 let currentRosterId = null;
+let draftMode = 'auction'; // 'auction' | 'snake'
+let snakeSettings = { teams: 10, mySlot: 1, bench: 6 };
+let snakeTeamNames = Array.from({length:10}, (_,i)=>`Team ${i+1}`);
+let snakePicks = [];       // { overallPick, round, teamSlot, player }
 let sortState = { col: 'myValue', dir: 'desc' };
 let posFilter = 'ALL';
 let searchQuery = '';
@@ -459,7 +545,8 @@ async function persist(){
   saveTimer = setTimeout(async ()=>{
     try{
       await storage.set('draftroom-state', JSON.stringify({
-        ratings, weights, settings, teamNames, draftPicks, savedRosters
+        ratings, weights, settings, teamNames, draftPicks, savedRosters,
+        draftMode, snakeSettings, snakeTeamNames, snakePicks
       }));
       markSaved();
     }catch(e){ console.error('save failed', e); }
@@ -476,6 +563,10 @@ async function loadState(){
       teamNames = s.teamNames || teamNames;
       draftPicks = s.draftPicks || [];
       savedRosters = s.savedRosters || [];
+      draftMode = s.draftMode || 'auction';
+      snakeSettings = s.snakeSettings || snakeSettings;
+      snakeTeamNames = s.snakeTeamNames || snakeTeamNames;
+      snakePicks = s.snakePicks || [];
     }
   }catch(e){ /* no saved state yet */ }
 }
@@ -1203,8 +1294,273 @@ function renderTeamCards(){
 }
 
 /* ============================================================
-   SETTINGS
+   SNAKE DRAFT MODE
    ============================================================ */
+function setupModeToggle(){
+  document.querySelectorAll('.mode-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      draftMode = btn.dataset.mode;
+      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('auctionBoard').style.display = draftMode==='auction' ? '' : 'none';
+      document.getElementById('snakeBoard').style.display = draftMode==='snake' ? '' : 'none';
+      persist();
+    });
+  });
+}
+
+// round-robin "snake" order: odd rounds go 1..N, even rounds go N..1
+function computeSnakeTeam(overallPick, teams){
+  const round = Math.ceil(overallPick / teams);
+  const posInRound = ((overallPick - 1) % teams) + 1;
+  const team = (round % 2 === 1) ? posInRound : (teams - posInRound + 1);
+  return { round, team };
+}
+
+function snakeTotalRounds(){
+  return STARTER_TEMPLATE.length + snakeSettings.bench;
+}
+
+function findPlayerByAdj(name){
+  return CURRENT.find(r=>r.name===name);
+}
+
+function renderSnakeStatus(){
+  const wrap = document.getElementById('snakeStatus');
+  if(!wrap) return;
+  const teams = snakeSettings.teams;
+  const totalRounds = snakeTotalRounds();
+  const totalPicks = teams * totalRounds;
+  const nextOverall = snakePicks.length + 1;
+  const done = nextOverall > totalPicks;
+  const { round, team } = done ? {round: totalRounds, team: null} : computeSnakeTeam(nextOverall, teams);
+  const isMyTurn = !done && team === snakeSettings.mySlot;
+  const teamName = team ? (snakeTeamNames[team-1] || `Team ${team}`) : '—';
+
+  wrap.innerHTML = `
+    <div class="sstat2"><div class="v num">${done ? totalPicks : nextOverall} / ${totalPicks}</div><div class="l">overall pick</div></div>
+    <div class="sstat2"><div class="v num">${done ? totalRounds : round} / ${totalRounds}</div><div class="l">round</div></div>
+    <div class="sstat2 ${isMyTurn?'myturn':''}"><div class="v">${done ? 'Draft complete' : (isMyTurn ? 'YOUR PICK' : teamName)}</div><div class="l">${done?'':'on the clock'}</div></div>
+  `;
+}
+
+function picksUntilMine(){
+  const teams = snakeSettings.teams;
+  const totalRounds = snakeTotalRounds();
+  const totalPicks = teams * totalRounds;
+  for(let p = snakePicks.length + 1; p <= totalPicks; p++){
+    const { team } = computeSnakeTeam(p, teams);
+    if(team === snakeSettings.mySlot) return p - (snakePicks.length + 1);
+  }
+  return null;
+}
+
+function renderSnakePickLog(){
+  const wrap = document.getElementById('snakePickLog');
+  if(!wrap) return;
+  if(snakePicks.length===0){
+    wrap.innerHTML = `<div class="empty-state">No picks logged yet. Log each pick as it happens, in order.</div>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  [...snakePicks].reverse().forEach(pick=>{
+    const teamName = snakeTeamNames[pick.teamSlot-1] || `Team ${pick.teamSlot}`;
+    const isMine = pick.teamSlot === snakeSettings.mySlot;
+    const row = document.createElement('div');
+    row.className = 'snake-pick-row';
+    row.innerHTML = `
+      <div class="sp-pick">R${pick.round}.${pick.overallPick}</div>
+      <div class="sp-name">${pick.player}</div>
+      <div class="sp-team ${isMine?'mine':''}">${teamName}${isMine?' (you)':''}</div>
+      <div class="rm-pick" data-pick="${pick.overallPick}">✕</div>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.rm-pick').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const op = parseInt(el.dataset.pick);
+      snakePicks = snakePicks.filter(p=>p.overallPick !== op)
+        .sort((a,b)=>a.overallPick-b.overallPick)
+        .map((p,i)=>({ ...p, overallPick: i+1, ...computeSnakeTeam(i+1, snakeSettings.teams) }));
+      persist();
+      refreshAll();
+    });
+  });
+}
+
+function renderSnakeBestAvailable(){
+  const wrap = document.getElementById('snakeBestAvailable');
+  if(!wrap) return;
+  const drafted = new Set(snakePicks.map(p=>p.player));
+  const byAdj = [...CURRENT].filter(r=> !drafted.has(r.name) && !(r.myValue===0 && r.adjValue===0))
+    .sort((a,b)=> b.adjValue - a.adjValue);
+  const top = byAdj.slice(0, 12);
+  if(top.length===0){
+    wrap.innerHTML = `<div class="empty-state">No players left.</div>`;
+    return;
+  }
+  wrap.innerHTML = top.map((r,i)=>`
+    <div class="best-avail-row">
+      <span class="ba-rank">${i+1}</span>
+      <span class="ba-name">${r.name}<span class="ba-meta">${r.team||'FA'} · ${r.pos}</span></span>
+      <span class="ba-val">$${r.adjValue}</span>
+    </div>
+  `).join('');
+}
+
+function assignSlotsFromNames(names){
+  const slots = STARTER_TEMPLATE.map(tag=>({ tag, name:null }));
+  const bench = [];
+  names.forEach(name=>{
+    const player = findPlayerByAdj(name);
+    const pos = player ? player.pos : null;
+    let slot = slots.find(s=> s.tag===pos && !s.name);
+    if(!slot && ['RB','WR','TE'].includes(pos)){
+      slot = slots.find(s=> s.tag==='FLEX' && !s.name);
+    }
+    if(slot) slot.name = name;
+    else bench.push(name);
+  });
+  return { slots, bench };
+}
+
+function renderSnakeProjectedLineup(){
+  const wrap = document.getElementById('snakeProjectedLineup');
+  if(!wrap) return;
+  const myNames = snakePicks.filter(p=>p.teamSlot===snakeSettings.mySlot)
+    .sort((a,b)=>a.overallPick-b.overallPick)
+    .map(p=>p.player);
+  const { slots, bench } = assignSlotsFromNames(myNames);
+  const until = picksUntilMine();
+
+  let html = '';
+  if(until !== null){
+    html += `<div class="next-pick-note">Your next pick is in <b>${until===0?'this pick':until+' pick'+(until===1?'':'s')}</b>.</div>`;
+  } else if(myNames.length>0 || snakePicks.length>0){
+    html += `<div class="next-pick-note">Draft complete for you — no picks remaining.</div>`;
+  }
+
+  slots.forEach(s=>{
+    if(s.name){
+      const player = findPlayerByAdj(s.name);
+      html += `<div class="roster-slot"><span class="slot-tag">${s.tag}</span><span class="slot-player">${s.name}<span class="slot-meta"> ${player?player.team||'':''}</span></span></div>`;
+    } else {
+      html += `<div class="roster-slot"><span class="slot-tag">${s.tag}</span><span class="slot-player empty">empty — need a ${s.tag==='FLEX'?'RB/WR/TE':s.tag}</span></div>`;
+    }
+  });
+  html += `<div class="roster-section-label">Bench (${bench.length}/${snakeSettings.bench})</div>`;
+  if(bench.length===0){
+    html += `<div class="roster-slot"><span class="slot-player empty">empty</span></div>`;
+  } else {
+    bench.forEach(name=>{
+      const player = findPlayerByAdj(name);
+      html += `<div class="roster-slot"><span class="slot-tag">${player?player.pos:'—'}</span><span class="slot-player">${name}<span class="slot-meta"> ${player?player.team||'':''}</span></span></div>`;
+    });
+  }
+  wrap.innerHTML = html;
+}
+
+function renderSnakeAutocomplete(query){
+  const list = document.getElementById('snakeAutocompleteList');
+  if(!list) return;
+  if(!query){ list.style.display='none'; list.innerHTML=''; renderSnakeNominatedCard(null); return; }
+  const q = query.toLowerCase();
+  const drafted = new Set(snakePicks.map(p=>p.player));
+  const matches = CURRENT.filter(r=> r.name.toLowerCase().includes(q) && !drafted.has(r.name))
+    .sort((a,b)=>b.adjValue-a.adjValue).slice(0,8);
+
+  const exact = CURRENT.find(r=> r.name.toLowerCase() === q);
+  renderSnakeNominatedCard(exact || null);
+
+  if(matches.length===0){ list.style.display='none'; return; }
+  list.innerHTML = matches.map(r=>`<div data-name="${encodeURIComponent(r.name)}"><span>${r.name} <span style="color:var(--text-mute)">(${r.team||'FA'} ${r.pos})</span></span><span class="ac-val">$${r.adjValue}</span></div>`).join('');
+  list.style.display='block';
+  list.querySelectorAll('div').forEach(d=>{
+    d.onclick = ()=>{
+      const name = decodeURIComponent(d.dataset.name);
+      document.getElementById('snakePlayerInput').value = name;
+      list.style.display='none';
+      renderSnakeNominatedCard(findPlayerByAdj(name));
+    };
+  });
+}
+
+function renderSnakeNominatedCard(r){
+  const wrap = document.getElementById('snakeNominatedCard');
+  if(!wrap) return;
+  if(!r){ wrap.innerHTML = ''; return; }
+  const stars = [1,2,3,4,5].map(v=>`<span class="star ${r.rating>=v?'filled':''}" data-val="${v}">★</span>`).join('');
+  wrap.innerHTML = `
+    <div class="nom-card">
+      <div class="nom-card-head">
+        <span class="nc-name">${r.name}</span>
+        <span class="nc-meta">${r.team||'FA'} · ${r.pos}${r.posRank?r.posRank:''} · Tier ${r.tier ?? '—'} · Bye ${r.bye ?? '—'} · Rank #${r.rank}</span>
+      </div>
+      <div class="nom-card-stats">
+        <div class="ncs"><div class="v">${r.espn!=null?'$'+r.espn:'—'}</div><div class="l">ESPN $</div></div>
+        <div class="ncs"><div class="v">${r.fp!=null?'$'+r.fp:'—'}</div><div class="l">FantasyPros $</div></div>
+        <div class="ncs"><div class="v">${r.ds!=null?'$'+r.ds:'—'}</div><div class="l">Draft Sharks $</div></div>
+        <div class="ncs"><div class="v">${r.projPts!=null?r.projPts.toFixed(1):'—'}</div><div class="l">Proj. Pts</div></div>
+        <div class="ncs"><div class="v">$${r.myValue}</div><div class="l">Value</div></div>
+        <div class="ncs highlight"><div class="v">$${r.adjValue}</div><div class="l">Adj. Value</div></div>
+      </div>
+      <div class="nom-card-notes">
+        <span><b>Upside:</b> ${r.upside && r.upside!=='-' ? r.upside : '—'}</span>
+        <span><b>Bust risk:</b> ${r.bust && r.bust!=='-' ? r.bust : '—'}</span>
+        <span class="nc-rating"><b>Interest:</b> <span class="star-rating" data-name="${encodeURIComponent(r.name)}">${stars}</span></span>
+      </div>
+    </div>
+  `;
+  wrap.querySelectorAll('.star').forEach(star=>{
+    star.addEventListener('click', ()=>{
+      const val = parseInt(star.dataset.val);
+      if(ratings[r.name] === val){ delete ratings[r.name]; } else { ratings[r.name] = val; }
+      persist();
+      CURRENT = computeAll();
+      renderSnakeNominatedCard(findPlayerByAdj(r.name));
+      renderValuesTable();
+    });
+  });
+}
+
+function logSnakePick(){
+  const nameInput = document.getElementById('snakePlayerInput');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const player = findPlayerByAdj(name);
+  if(!player){ alert('Player not found — pick from the suggestions list.'); return; }
+  if(snakePicks.some(p=>p.player===name)){ alert(`${name} has already been drafted.`); return; }
+  const overallPick = snakePicks.length + 1;
+  const { round, team } = computeSnakeTeam(overallPick, snakeSettings.teams);
+  snakePicks.push({ overallPick, round, teamSlot: team, player: name });
+  nameInput.value = '';
+  document.getElementById('snakeAutocompleteList').style.display='none';
+  renderSnakeNominatedCard(null);
+  persist();
+  refreshAll();
+}
+
+function setupSnakeBoard(){
+  const input = document.getElementById('snakePlayerInput');
+  input.addEventListener('input', e=> renderSnakeAutocomplete(e.target.value));
+  input.addEventListener('blur', ()=> setTimeout(()=>{
+    const l = document.getElementById('snakeAutocompleteList');
+    if(l) l.style.display='none';
+  }, 150));
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); logSnakePick(); } });
+  document.getElementById('snakeLogPickBtn').addEventListener('click', logSnakePick);
+
+  document.getElementById('snakeResetBtn').addEventListener('click', ()=>{
+    if(snakePicks.length===0) return;
+    if(confirm(`Clear all ${snakePicks.length} logged snake-draft picks?`)){
+      snakePicks = [];
+      persist();
+      refreshAll();
+    }
+  });
+}
+
+
 function renderSettings(){
   document.getElementById('cfgTeams').value = settings.teams;
   document.getElementById('cfgBudget').value = settings.budget;
@@ -1243,6 +1599,37 @@ function renderSettings(){
       renderDraftTargets();
     });
   });
+
+  // --- Snake draft settings ---
+  document.getElementById('cfgSnakeTeams').value = snakeSettings.teams;
+  document.getElementById('cfgSnakeBench').value = snakeSettings.bench;
+  const slotSel = document.getElementById('cfgSnakeSlot');
+  slotSel.innerHTML = Array.from({length:snakeSettings.teams}, (_,i)=>i+1)
+    .map(n=>`<option value="${n}">${snakeTeamNames[n-1] || 'Team '+n}</option>`).join('');
+  slotSel.value = snakeSettings.mySlot;
+  slotSel.onchange = e=>{
+    snakeSettings.mySlot = parseInt(e.target.value);
+    persist();
+    refreshAll();
+  };
+
+  const snakeList = document.getElementById('snakeTeamNameList');
+  snakeList.innerHTML = '';
+  for(let i=0;i<snakeSettings.teams;i++){
+    if(snakeTeamNames[i]==null) snakeTeamNames[i] = `Team ${i+1}`;
+    const row = document.createElement('div');
+    row.className = 'field-row';
+    row.innerHTML = `<label>Slot ${i+1}</label><input type="text" data-idx="${i}" value="${snakeTeamNames[i]}">`;
+    snakeList.appendChild(row);
+  }
+  snakeList.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      snakeTeamNames[parseInt(e.target.dataset.idx)] = e.target.value || `Team ${parseInt(e.target.dataset.idx)+1}`;
+      persist();
+      renderSettings();
+      refreshAll();
+    });
+  });
 }
 
 function bindSettingsInputs(){
@@ -1274,6 +1661,26 @@ function bindSettingsInputs(){
       persist();
       refreshAll();
     });
+  });
+
+  document.getElementById('cfgSnakeTeams').addEventListener('change', e=>{
+    let v = parseInt(e.target.value);
+    if(isNaN(v) || v<2) v = snakeSettings.teams;
+    snakeSettings.teams = v;
+    while(snakeTeamNames.length < v) snakeTeamNames.push(`Team ${snakeTeamNames.length+1}`);
+    snakeTeamNames = snakeTeamNames.slice(0,v);
+    if(snakeSettings.mySlot > v) snakeSettings.mySlot = 1;
+    persist();
+    renderSettings();
+    refreshAll();
+  });
+
+  document.getElementById('cfgSnakeBench').addEventListener('change', e=>{
+    let v = parseInt(e.target.value);
+    if(isNaN(v) || v<0) v = snakeSettings.bench;
+    snakeSettings.bench = v;
+    persist();
+    refreshAll();
   });
 }
 
@@ -1329,6 +1736,10 @@ function refreshAll(){
   renderDraftStats();
   renderValuePoolStats();
   renderTopStats();
+  renderSnakeStatus();
+  renderSnakePickLog();
+  renderSnakeBestAvailable();
+  renderSnakeProjectedLineup();
 }
 
 /* ============================================================
@@ -1343,6 +1754,13 @@ async function init(){
   renderSettings();
   bindSettingsInputs();
   setupTabs();
+  setupModeToggle();
+  setupSnakeBoard();
+  if(draftMode === 'snake'){
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode==='snake'));
+    document.getElementById('auctionBoard').style.display = 'none';
+    document.getElementById('snakeBoard').style.display = '';
+  }
   refreshAll();
 
   document.getElementById('searchInput').addEventListener('input', e=>{
