@@ -360,73 +360,33 @@
 
 <!-- ===================== DRAFT BOARD ===================== -->
 <div class="view" id="view-draft">
-  <div class="mode-toggle" id="modeToggle">
-    <button class="mode-btn active" data-mode="auction">Auction Draft</button>
-    <button class="mode-btn" data-mode="snake">Snake Draft</button>
-  </div>
-
-  <!-- ===== AUCTION MODE ===== -->
-  <div id="auctionBoard">
-    <div class="draft-stats" id="draftStats"></div>
-    <div class="draft-layout">
-      <div class="panel">
-        <div class="pick-form">
-          <div class="autocomplete-wrap">
-            <input id="playerSearchInput" placeholder="Nominate a player…" autocomplete="off">
-            <div class="autocomplete-list" id="autocompleteList"></div>
-          </div>
-          <input id="priceInput" type="number" min="0" placeholder="Price $">
-          <select id="teamSelect"></select>
-          <button class="btn primary" id="logPickBtn">Log pick</button>
+  <div class="draft-stats" id="draftStats"></div>
+  <div class="draft-layout">
+    <div class="panel">
+      <div class="pick-form">
+        <div class="autocomplete-wrap">
+          <input id="playerSearchInput" placeholder="Nominate a player…" autocomplete="off">
+          <div class="autocomplete-list" id="autocompleteList"></div>
         </div>
-        <div id="nominatedCard"></div>
-        <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
-          <span>Pick log</span>
-          <button class="btn danger" id="resetDraftBtn" style="padding:5px 11px; font-size:12px;">Reset draft</button>
-        </div>
-        <div class="pick-log" id="pickLog"></div>
+        <input id="priceInput" type="number" min="0" placeholder="Price $">
+        <select id="teamSelect"></select>
+        <button class="btn primary" id="logPickBtn">Log pick</button>
       </div>
-      <div class="draft-side">
-        <div class="panel" style="padding:14px 16px;">
-          <div class="section-title" style="padding:0 0 12px;">Top available</div>
-          <div id="topAvailable"></div>
-        </div>
-        <div class="panel" style="padding:14px 16px;">
-          <div class="section-title" style="padding:0 0 12px;">Team budgets</div>
-          <div class="team-cards" id="teamCards"></div>
-        </div>
+      <div id="nominatedCard"></div>
+      <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
+        <span>Pick log</span>
+        <button class="btn danger" id="resetDraftBtn" style="padding:5px 11px; font-size:12px;">Reset draft</button>
       </div>
+      <div class="pick-log" id="pickLog"></div>
     </div>
-  </div>
-
-  <!-- ===== SNAKE MODE ===== -->
-  <div id="snakeBoard" style="display:none;">
-    <div class="snake-status" id="snakeStatus"></div>
-    <div class="draft-layout">
-      <div class="panel">
-        <div class="pick-form">
-          <div class="autocomplete-wrap" style="flex:3;">
-            <input id="snakePlayerInput" placeholder="Who got picked?" autocomplete="off">
-            <div class="autocomplete-list" id="snakeAutocompleteList"></div>
-          </div>
-          <button class="btn primary" id="snakeLogPickBtn">Log pick</button>
-        </div>
-        <div id="snakeNominatedCard"></div>
-        <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; padding-right:16px;">
-          <span>Pick log</span>
-          <button class="btn danger" id="snakeResetBtn" style="padding:5px 11px; font-size:12px;">Reset snake draft</button>
-        </div>
-        <div class="pick-log" id="snakePickLog"></div>
+    <div class="draft-side">
+      <div class="panel" style="padding:14px 16px;">
+        <div class="section-title" style="padding:0 0 12px;">Top available</div>
+        <div id="topAvailable"></div>
       </div>
-      <div class="draft-side">
-        <div class="panel" style="padding:14px 16px;">
-          <div class="section-title" style="padding:0 0 12px;">Best available (by Adjusted Value)</div>
-          <div id="snakeBestAvailable"></div>
-        </div>
-        <div class="panel" style="padding:14px 16px;">
-          <div class="section-title" style="padding:0 0 12px;">Your projected lineup</div>
-          <div id="snakeProjectedLineup"></div>
-        </div>
+      <div class="panel" style="padding:14px 16px;">
+        <div class="section-title" style="padding:0 0 12px;">Team budgets</div>
+        <div class="team-cards" id="teamCards"></div>
       </div>
     </div>
   </div>
@@ -461,14 +421,6 @@
         <h3>Team names</h3>
         <div class="field-row" style="margin-bottom:10px;"><label>Which team is yours?</label><select id="cfgMyTeam" style="width:150px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:6px 8px; font-size:13px;"></select></div>
         <div class="team-list" id="teamNameList"></div>
-      </div>
-      <div class="field-group" style="grid-column:1/-1;">
-        <h3>Snake draft settings</h3>
-        <div class="field-row"><label>Number of teams</label><input type="number" id="cfgSnakeTeams" min="2" max="20"></div>
-        <div class="field-row"><label>Bench spots</label><input type="number" id="cfgSnakeBench" min="0"></div>
-        <div class="field-row" style="margin-bottom:10px;"><label>Your draft slot</label><select id="cfgSnakeSlot" style="width:90px; background:var(--bg); border:1px solid var(--border); border-radius:6px; color:var(--text); padding:6px 8px; font-size:13px;"></select></div>
-        <div class="team-list" id="snakeTeamNameList"></div>
-        <div class="weight-note">Snake draft uses the same starting lineup shape (QB, 2 RB, 2 WR, TE, FLEX, DST, K) but its own team count, bench size, and pick order — fully separate from your auction league.</div>
       </div>
       <div class="field-group" style="grid-column:1/-1;">
         <h3>Value pool check</h3>
@@ -1599,37 +1551,6 @@ function renderSettings(){
       renderDraftTargets();
     });
   });
-
-  // --- Snake draft settings ---
-  document.getElementById('cfgSnakeTeams').value = snakeSettings.teams;
-  document.getElementById('cfgSnakeBench').value = snakeSettings.bench;
-  const slotSel = document.getElementById('cfgSnakeSlot');
-  slotSel.innerHTML = Array.from({length:snakeSettings.teams}, (_,i)=>i+1)
-    .map(n=>`<option value="${n}">${snakeTeamNames[n-1] || 'Team '+n}</option>`).join('');
-  slotSel.value = snakeSettings.mySlot;
-  slotSel.onchange = e=>{
-    snakeSettings.mySlot = parseInt(e.target.value);
-    persist();
-    refreshAll();
-  };
-
-  const snakeList = document.getElementById('snakeTeamNameList');
-  snakeList.innerHTML = '';
-  for(let i=0;i<snakeSettings.teams;i++){
-    if(snakeTeamNames[i]==null) snakeTeamNames[i] = `Team ${i+1}`;
-    const row = document.createElement('div');
-    row.className = 'field-row';
-    row.innerHTML = `<label>Slot ${i+1}</label><input type="text" data-idx="${i}" value="${snakeTeamNames[i]}">`;
-    snakeList.appendChild(row);
-  }
-  snakeList.querySelectorAll('input').forEach(inp=>{
-    inp.addEventListener('change', e=>{
-      snakeTeamNames[parseInt(e.target.dataset.idx)] = e.target.value || `Team ${parseInt(e.target.dataset.idx)+1}`;
-      persist();
-      renderSettings();
-      refreshAll();
-    });
-  });
 }
 
 function bindSettingsInputs(){
@@ -1661,26 +1582,6 @@ function bindSettingsInputs(){
       persist();
       refreshAll();
     });
-  });
-
-  document.getElementById('cfgSnakeTeams').addEventListener('change', e=>{
-    let v = parseInt(e.target.value);
-    if(isNaN(v) || v<2) v = snakeSettings.teams;
-    snakeSettings.teams = v;
-    while(snakeTeamNames.length < v) snakeTeamNames.push(`Team ${snakeTeamNames.length+1}`);
-    snakeTeamNames = snakeTeamNames.slice(0,v);
-    if(snakeSettings.mySlot > v) snakeSettings.mySlot = 1;
-    persist();
-    renderSettings();
-    refreshAll();
-  });
-
-  document.getElementById('cfgSnakeBench').addEventListener('change', e=>{
-    let v = parseInt(e.target.value);
-    if(isNaN(v) || v<0) v = snakeSettings.bench;
-    snakeSettings.bench = v;
-    persist();
-    refreshAll();
   });
 }
 
@@ -1736,10 +1637,6 @@ function refreshAll(){
   renderDraftStats();
   renderValuePoolStats();
   renderTopStats();
-  renderSnakeStatus();
-  renderSnakePickLog();
-  renderSnakeBestAvailable();
-  renderSnakeProjectedLineup();
 }
 
 /* ============================================================
@@ -1754,13 +1651,6 @@ async function init(){
   renderSettings();
   bindSettingsInputs();
   setupTabs();
-  setupModeToggle();
-  setupSnakeBoard();
-  if(draftMode === 'snake'){
-    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode==='snake'));
-    document.getElementById('auctionBoard').style.display = 'none';
-    document.getElementById('snakeBoard').style.display = '';
-  }
   refreshAll();
 
   document.getElementById('searchInput').addEventListener('input', e=>{
