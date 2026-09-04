@@ -558,7 +558,7 @@ function computeAll(){
 }
 
 const EFFICIENCY_MIN_VALUE = 15;
-const EFFICIENCY_THRESHOLDS = { RB: 170, WR: 170, TE: 170 };
+const EFFICIENCY_THRESHOLDS = { RB: 0, WR: 0 };
 
 function computeEfficiency(value, projPts, pos){
   if(value < EFFICIENCY_MIN_VALUE) return null;
@@ -599,7 +599,7 @@ const COLS = [
   {key:'myValue', label:'Value', num:true},
   {key:'rating', label:'Interest', num:true},
   {key:'adjValue', label:'Adj. Value', num:true},
-  {key:'efficiency', label:'Pts/$ Above Repl.', num:true},
+  {key:'efficiency', label:'Pts/$', num:true},
   {key:'upside', label:'Upside'},
   {key:'bust', label:'Bust Risk'},
 ];
@@ -1115,7 +1115,7 @@ function renderNominatedCard(r){
         <div class="ncs"><div class="v">${r.projPts!=null?r.projPts.toFixed(1):'—'}</div><div class="l">Proj. Pts</div></div>
         <div class="ncs highlight"><div class="v">$${r.myValue}</div><div class="l">Value</div></div>
         <div class="ncs highlight"><div class="v">$${r.adjValue}</div><div class="l">Adj. Value</div></div>
-        <div class="ncs"><div class="v">${r.efficiency!=null ? r.efficiency.toFixed(2) : '—'}</div><div class="l">Pts/$ Above Repl.</div></div>
+        <div class="ncs"><div class="v">${r.efficiency!=null ? r.efficiency.toFixed(2) : '—'}</div><div class="l">Pts/$</div></div>
       </div>
       <div class="nom-card-notes">
         <span><b>Upside:</b> ${r.upside && r.upside!=='-' ? r.upside : '—'}</span>
