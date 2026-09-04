@@ -549,11 +549,22 @@ function computeAll(){
     r.myValue = Math.max(0, Math.round(r.raw * scale));
     r.rating = ratings[r.name] || 0;
     r.adjValue = computeAdjustedValue(r.myValue, r.rating);
+    r.efficiency = computeEfficiency(r.myValue, r.projPts, r.pos);
   });
 
   rows.sort((a,b)=>b.myValue - a.myValue);
   rows.forEach((r,i)=> r.rank = i+1 );
   return rows;
+}
+
+const EFFICIENCY_MIN_VALUE = 25;
+const EFFICIENCY_THRESHOLDS = { QB: 240, RB: 180, WR: 180, TE: 180 };
+
+function computeEfficiency(value, projPts, pos){
+  if(value < EFFICIENCY_MIN_VALUE) return null;
+  const threshold = EFFICIENCY_THRESHOLDS[pos];
+  if(threshold == null || projPts == null) return null;
+  return (projPts - threshold) / value;
 }
 
 function computeAdjustedValue(value, rating){
@@ -588,6 +599,7 @@ const COLS = [
   {key:'myValue', label:'Value', num:true},
   {key:'rating', label:'Interest', num:true},
   {key:'adjValue', label:'Adj. Value', num:true},
+  {key:'efficiency', label:'Pts/$ Above Repl.', num:true},
   {key:'upside', label:'Upside'},
   {key:'bust', label:'Bust Risk'},
 ];
@@ -662,6 +674,7 @@ function renderValuesTable(){
         </div>
       </td>
       <td class="num" style="font-weight:700; color:var(--gold);">$${r.adjValue}</td>
+      <td class="num dim">${r.efficiency!=null ? r.efficiency.toFixed(2) : '—'}</td>
       <td class="dim">${r.upside && r.upside!=='-' ? r.upside : '—'}</td>
       <td class="dim">${r.bust && r.bust!=='-' ? r.bust : '—'}</td>
     `;
@@ -1102,6 +1115,7 @@ function renderNominatedCard(r){
         <div class="ncs"><div class="v">${r.projPts!=null?r.projPts.toFixed(1):'—'}</div><div class="l">Proj. Pts</div></div>
         <div class="ncs highlight"><div class="v">$${r.myValue}</div><div class="l">Value</div></div>
         <div class="ncs highlight"><div class="v">$${r.adjValue}</div><div class="l">Adj. Value</div></div>
+        <div class="ncs"><div class="v">${r.efficiency!=null ? r.efficiency.toFixed(2) : '—'}</div><div class="l">Pts/$ Above Repl.</div></div>
       </div>
       <div class="nom-card-notes">
         <span><b>Upside:</b> ${r.upside && r.upside!=='-' ? r.upside : '—'}</span>
