@@ -557,8 +557,8 @@ function computeAll(){
   return rows;
 }
 
-const EFFICIENCY_MIN_VALUE = 25;
-const EFFICIENCY_THRESHOLDS = { QB: 240, RB: 180, WR: 180, TE: 180 };
+const EFFICIENCY_MIN_VALUE = 15;
+const EFFICIENCY_THRESHOLDS = { RB: 170, WR: 170, TE: 170 };
 
 function computeEfficiency(value, projPts, pos){
   if(value < EFFICIENCY_MIN_VALUE) return null;
