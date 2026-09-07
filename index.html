@@ -1207,7 +1207,7 @@ function renderTopAvailable(){
   }
 
   const wrapAdj = document.getElementById('topAvailableAdj');
-  const topAdj = [...available].sort((a,b)=>b.adjValue-a.adjValue).slice(0, 10);
+  const topAdj = [...available].sort((a,b)=>b.adjValue-a.adjValue).slice(0, 12);
   if(topAdj.length===0){
     wrapAdj.innerHTML = `<div class="empty-state">No players left.</div>`;
   } else {
