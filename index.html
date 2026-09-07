@@ -160,6 +160,8 @@
   .dstat .l{ font-size:11px; color:var(--text-mute); margin-top:2px; }
   .dstat .v.pos{ color:var(--red); }
   .dstat .v.neg{ color:var(--green); }
+  .top-avail-cols{ display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+  .ta-subhead{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-mute); font-weight:600; margin-bottom:4px; }
   .top-avail-row{ display:flex; align-items:center; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border-soft); font-size:12.5px; }
   .top-avail-row:last-child{ border-bottom:none; }
   .top-avail-row .ta-rank{ color:var(--text-mute); font-family:'JetBrains Mono',monospace; width:20px; flex-shrink:0; }
@@ -382,7 +384,16 @@
     <div class="draft-side">
       <div class="panel" style="padding:14px 16px;">
         <div class="section-title" style="padding:0 0 12px;">Top available</div>
-        <div id="topAvailable"></div>
+        <div class="top-avail-cols">
+          <div>
+            <div class="ta-subhead">By Value</div>
+            <div id="topAvailable"></div>
+          </div>
+          <div>
+            <div class="ta-subhead">By Adjusted Value</div>
+            <div id="topAvailableAdj"></div>
+          </div>
+        </div>
       </div>
       <div class="panel" style="padding:14px 16px;">
         <div class="section-title" style="padding:0 0 12px;">Team budgets</div>
@@ -1178,21 +1189,36 @@ function renderPickLog(){
 }
 
 function renderTopAvailable(){
-  const wrap = document.getElementById('topAvailable');
   const drafted = new Set(draftPicks.map(p=>p.player));
   const available = CURRENT.filter(r=> !drafted.has(r.name) && !(r.myValue===0 && r.adjValue===0));
+
+  const wrap = document.getElementById('topAvailable');
   const top = available.slice(0, 12); // CURRENT is already sorted by myValue desc
   if(top.length===0){
     wrap.innerHTML = `<div class="empty-state">No players left.</div>`;
-    return;
+  } else {
+    wrap.innerHTML = top.map((r,i)=>`
+      <div class="top-avail-row">
+        <span class="ta-rank">${i+1}</span>
+        <span class="ta-name">${r.name}<span class="ta-meta">${r.team||'FA'} · ${r.pos}</span></span>
+        <span class="ta-val">$${r.myValue}</span>
+      </div>
+    `).join('');
   }
-  wrap.innerHTML = top.map((r,i)=>`
-    <div class="top-avail-row">
-      <span class="ta-rank">${i+1}</span>
-      <span class="ta-name">${r.name}<span class="ta-meta">${r.team||'FA'} · ${r.pos}</span></span>
-      <span class="ta-val">$${r.myValue}</span>
-    </div>
-  `).join('');
+
+  const wrapAdj = document.getElementById('topAvailableAdj');
+  const topAdj = [...available].sort((a,b)=>b.adjValue-a.adjValue).slice(0, 10);
+  if(topAdj.length===0){
+    wrapAdj.innerHTML = `<div class="empty-state">No players left.</div>`;
+  } else {
+    wrapAdj.innerHTML = topAdj.map((r,i)=>`
+      <div class="top-avail-row">
+        <span class="ta-rank">${i+1}</span>
+        <span class="ta-name">${r.name}<span class="ta-meta">${r.team||'FA'} · ${r.pos}</span></span>
+        <span class="ta-val">$${r.adjValue}</span>
+      </div>
+    `).join('');
+  }
 }
 
 function renderDraftStats(){
